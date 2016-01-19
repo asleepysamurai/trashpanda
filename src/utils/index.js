@@ -9,10 +9,10 @@ import {
 	setters, getters
 }
 from './objects';
-
-export setters;
-export getters;
-
-// Type Helpers
 import types from './types';
-export types;
+
+export {
+	setters,
+	getters,
+	types
+};

@@ -57,9 +57,11 @@ function factory(opts) {
 
 		this.pathname = this.pathname.replace(this.baseUrl, '');
 		this.body = data;
+
+		this.target = opts.target;
 	};
 
-	TrashPandaRequest.prototype.update(opts) {
+	TrashPandaRequest.prototype.update = function(opts) {
 		merge(this, opts);
 	};
 

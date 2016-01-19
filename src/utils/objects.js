@@ -25,5 +25,7 @@ let getters = {
 	}
 };
 
-export setters;
-export getters;
+export {
+	setters,
+	getters
+};

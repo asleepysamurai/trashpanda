@@ -70,16 +70,22 @@ function flattenArray(value) {
 	}, []);
 };
 
-export toBoolean;
-export toString;
-export toInteger;
+export {
+	toBoolean,
+	toString,
+	toInteger
+};
 
-export isBoolean;
-export isString;
-export isFunction;
-export isObject;
-export isObjectOfType;
-export isArray;
-export isArrayOfStrings;
+export {
+	isBoolean,
+	isString,
+	isFunction,
+	isObject,
+	isObjectOfType,
+	isArray,
+	isArrayOfStrings
+};
 
-export flattenArray;
+export {
+	flattenArray
+};

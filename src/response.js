@@ -32,7 +32,7 @@ function factory(opts) {
 		this.locals = {};
 	};
 
-	TrashPandaResponse.prototype.end(data, redirectUrl) {
+	TrashPandaResponse.prototype.end = function(data, redirectUrl) {
 		if (responseEnded) {
 			let err = new Error('Response already sent. Cannot resend.');
 			err.code = 'CANTRESEND';
@@ -50,16 +50,16 @@ function factory(opts) {
 	};
 
 	['json', 'send'].forEach(methodName => {
-		TrashPandaResponse.prototype[methodName](...params) {
-			return this.end(...params);
+		TrashPandaResponse.prototype[methodName] = function() {
+			return this.end(...arguments);
 		}
 	});
 
-	TrashPandaResponse.prototype.redirect(status = 302, url) {
+	TrashPandaResponse.prototype.redirect = function(status = 302, url) {
 		return this.status(status).end(null, url);
 	};
 
-	TrashPandaResponse.prototype.render(view, locals, callback) {
+	TrashPandaResponse.prototype.render = function(view, locals, callback) {
 		let renderOpts = {
 			_locals: locals,
 			mount: !callback
@@ -75,7 +75,7 @@ function factory(opts) {
 		});
 	};
 
-	TrashPandaResponse.prototype.sendStatus(status) {
+	TrashPandaResponse.prototype.sendStatus = function(status) {
 		let statusMap = {
 			100: 'Continue',
 			101: 'Switching Protocols',
@@ -144,7 +144,7 @@ function factory(opts) {
 		return this.status(status).send(statusDescription);
 	};
 
-	TrashPandaResponse.prototype.status(statusCode) {
+	TrashPandaResponse.prototype.status = function(statusCode) {
 		status = statusCode;
 		return this;
 	};

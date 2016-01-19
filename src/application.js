@@ -69,7 +69,7 @@ function getDefaultSettings() {
 	return settings;
 };
 
-resolveMockDependencies = function(dependencyNames, mocks) {
+function resolveMockDependencies(dependencyNames, mocks) {
 	if (!(utils.isArrayOfStrings(dependencyNames)))
 		throw new Error('Application dependencies should be an array of dependency names.');
 
@@ -83,7 +83,7 @@ resolveMockDependencies = function(dependencyNames, mocks) {
 	return resolvedMocks;
 };
 
-resolveDependencies = function(dependencyNames, apps) {
+function resolveDependencies(dependencyNames, apps) {
 	if (!(utils.isArrayOfStrings(dependencyNames)))
 		throw new Error('Application dependencies should be an array of dependency names.');
 
@@ -110,7 +110,7 @@ function initApps(app, mocks, apps, rootApp) {
 		app.dependencies = resolveMockDependencies(app.dependencies, mocks);
 		app.state = states.inited;
 		apps[app.name] = app;
-		app.emit('init');
+		app.emit('init', app);
 
 		debug('Initing app ${app.name}...[DONE]');
 	}
@@ -130,7 +130,7 @@ function loadApps(apps) {
 		if (app.state == states.inited) {
 			app.dependencies = resolveDependencies(app.dependencies, apps);
 			app.state = states.loaded;
-			app.emit('load');
+			app.emit('load', app);
 		}
 
 		debug('Loading app ${app.name}...[DONE]');
@@ -155,7 +155,7 @@ function reconcileMocksWithApps(mocks, apps) {
 	debug('Reconciling event handlers...[DONE]');
 };
 
-function resolveUrl(app, url, method = 'get', data = null, callback) {
+function resolveUrl(app, url, target = null, method = 'get', data = null, callback) {
 	debug('Resolving url: ${url}...');
 
 	function next(err, status, data, redirectUrl) {
@@ -165,7 +165,7 @@ function resolveUrl(app, url, method = 'get', data = null, callback) {
 			debug('Resolving url: ${url}... [Done][${status}] +NNNms');
 
 			if (redirectUrl)
-				return resolveUrl(app, redirectUrl);
+				return resolveUrl(app, redirectUrl, callback);
 		}
 
 		callback && callback(err, data);
@@ -175,7 +175,8 @@ function resolveUrl(app, url, method = 'get', data = null, callback) {
 		app: app,
 		url: url,
 		method: method,
-		data: data
+		data: data,
+		target: target
 	});
 	let res = Response({
 		app: app,
@@ -183,11 +184,69 @@ function resolveUrl(app, url, method = 'get', data = null, callback) {
 		callback: next
 	});
 
-	app.router.resolve(req, res, next);
+	return app.router.resolve(req, res, next);
 };
 
 function setAsAuthoritativeApp(app) {
 	authoritativeApp = app;
+};
+
+function setupRoutingHelpers(app, mountNode) {
+	/**
+	 * Adds mutation observers to mountNode.
+	 * If any anchor tag gets added, attaches a click
+	 * event listener, which routes the url change
+	 * through app.router.
+	 */
+
+	if (!utils.isObjectOfType(mountNode, window.Node))
+		throw new Error('Mount node has to be a Node (see https://developer.mozilla.org/en/docs/Web/API/Node).');
+
+	function route(ev) {
+		let node = ev.currentTarget;
+		if (!node)
+			return;
+
+		let href = node.getAttribute('href');
+		if (!href)
+			return;
+
+		let target = node.getAttribute('target');
+		let authoritativeApp = app.getAuthoritativeApp();
+
+		if (!authoritativeApp)
+			throw new Error('No authoritative app found. Invalid application state.');
+
+		let routedLocally = authoritativeApp.resolveUrl(href, null, target);
+
+		//If app can handle routing, suppress browser redirection
+		if (routedLocally)
+			ev.preventDefault();
+	};
+
+	let observer = new MutationObserver(records => {
+		records.forEach(record => {
+			Array.prototype.call(record.addedNodes, node => {
+				if (utils.isObjectOfType(node, window.HTMLAnchorElement))
+					node.addEventListener('click', route);
+			});
+
+			Array.prototype.call(record.removedNodes, node => {
+				if (utils.isObjectOfType(node, window.HTMLAnchorElement))
+					node.removeEventListener('click', route);
+			});
+		});
+	});
+
+	observer.observe(document.documentElement, {
+		childList: true,
+		subtree: true
+	});
+};
+
+function setupRootApp(app, mountNode) {
+	setAsAuthoritativeApp(app);
+	setupRoutingHelpers(app, mountNode);
 };
 
 function factory(force) {
@@ -335,14 +394,15 @@ function factory(force) {
 		ext.forEach((extName) => view.engines[extName] = renderer);
 	};
 
-	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded = true, mountNode = document.body, callback) {
+	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded = true, _mountNode = document.body, callback) {
 		function loadApplication(ev = null, callback = callback) {
 			debug('Initing application...');
 
 			this.root = true;
-			mountNode = mountNode;
+			mountNode = _mountNode;
 
-			setAsAuthoritativeApp(this);
+			setupRootApp(this, mountNode);
+
 			initApps(this, mocks, this);
 			reconcileMocksWithApps(mocks, apps);
 			loadApps(this, apps, this);
@@ -449,7 +509,8 @@ function factory(force) {
 				handler.mountPath = path;
 			else {
 				handler.mountPath = utils.isArray(handler.mountPath) ? handler.mountPath : [handler.mountPath];
-				handler.mountPath.push(utils.isArray(path) ? ...path : path);
+				//handler.mountPath.push(utils.isArray(path) ? ...path : path); //Babel can't handle this so use below instead
+				utils.isArray(path) ? handler.mountPath.push(...path) : handler.mountPath.push(path);
 			}
 
 			this.router.use(path, handler.resolve);
@@ -463,9 +524,9 @@ function factory(force) {
 	 * Route triggering methods
 	 */
 
-	TrashPandaApplication.prototype.redirect = function(url, data = null, callback) {
+	TrashPandaApplication.prototype.resolveUrl = function(url, data = null, target = null, callback) {
 		if (authoritativeApp != this) {
-			let err = new Error('${this.name} does not have authority to initiate redirections. Get the authoritative app using \'app.getAuthoritativeApp()\' and send it a \'requestRedirect\' message.')
+			let err = new Error('${this.name} does not have authority to initiate redirections. Get the authoritative app using \'app.getAuthoritativeApp()\'.');
 			err.code = 'NOAUTHORITY';
 			return callback(err);
 		}
@@ -477,10 +538,12 @@ function factory(force) {
 			throw new Error('url should be a string or a function returning a string.');
 
 		let method = data ? 'post' : 'get';
-		resolveUrl(this, url, method, data, callback);
+		return resolveUrl(this, url, target, method, data, callback);
 	};
 
 	TrashPandaApplication.prototype.getAuthoritativeApp = function() {
+		// TODO: Implement permissions and prevent apps
+		// without appropriate permissions from getting authoritativeApp.
 		return authoritativeApp;
 	};
 

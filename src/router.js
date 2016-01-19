@@ -94,6 +94,14 @@ function factory(opts) {
 
 	TrashPandaRouter.prototype.resolve(req, res, next) {
 		/**
+		 * Attempts to route a req client side.
+		 * Returns true if routing can be handled locally.
+		 * Else returns false.
+		 */
+
+		/**
+		 * NO LONGER ACCURATE
+		 * TODO: Update this comment with proper algo
 		 * Algorithm:
 		 * 1. Run each matcher against url
 		 * 2. If matcher matches concat handlers to execHandlers
@@ -103,7 +111,33 @@ function factory(opts) {
 		let that = this;
 		let execHandlers = [];
 		let errorHandlers = [];
-		let path = urlUtils.parse(req.url).pathname;
+		let parsedUrl = urlUtils.parse(req.url);
+		let path = parsedUrl.pathname;
+
+		/**
+		 * shouldRouteLocally - Flag which indicates that
+		 * root app should perform routing instead of browser.
+		 * If url to route to has a different host or if req.target
+		 * is not the same as current browsing context,
+		 * then routing is performed by browser. Else by app.
+		 */
+		let shouldRouteLocally = false;
+		if ((!parsedUrl.host || parsedUrl.host == window.location.host) &&
+			(!parsedUrl.protocol || parsedUrl.protocol == window.location.protocol)) {
+			let targetMap = {
+				'_self': window,
+				'_parent': window.parent,
+				'_top': window.top
+			};
+
+			if (req.target)
+				shouldRouteLocally = targetMap[req.target] == window;
+			else
+				shouldRouteLocally = true;
+		}
+
+		if (!shouldRouteLocally)
+			return false;
 
 		let routeMatchKeys = Object.keys(routes);
 		routeMatchKeys.forEach(matcherKey => {
@@ -156,6 +190,8 @@ function factory(opts) {
 				return next(err);
 			});
 		});
+
+		return true;
 	};
 
 	TrashPandaRouter.prototype.setAsAuthoritativeRouter = function() {
