@@ -10,9 +10,9 @@
  * TrashPanda Request
  */
 
-import pathToRegex from 'path-to-regexp';
-import merge from 'utils-merge';
-import utils from './utils';
+let pathToRegex = require('path-to-regexp');
+let merge = require('utils-merge');
+let utils = require('./utils');
 
 function factory(opts) {
 	let href;
@@ -68,5 +68,4 @@ function factory(opts) {
 	return new TrashPandaRequest(opts);
 };
 
-export
-default factory;
+module.exports = factory;

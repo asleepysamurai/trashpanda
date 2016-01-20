@@ -10,10 +10,10 @@
  * TrashPanda Router
  */
 
-import pathToRegex from 'path-to-regexp';
-import merge from 'utils-merge';
-import urlUtils from 'url';
-import async from 'async';
+let pathToRegex = require('path-to-regexp');
+let merge = require('utils-merge');
+let urlUtils = require('url');
+let async = require('async');
 
 function factory(opts) {
 	let options = {};
@@ -201,5 +201,4 @@ function factory(opts) {
 	return new TrashPandaRouter(opts);
 };
 
-export
-default factory;
+module.exports = factory;

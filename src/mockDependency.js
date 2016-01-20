@@ -50,5 +50,4 @@ function factory(name) {
 	return new MockDependency(name);
 };
 
-export
-default factory;
+module.exports = factory;

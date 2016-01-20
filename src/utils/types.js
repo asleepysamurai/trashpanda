@@ -70,22 +70,16 @@ function flattenArray(value) {
 	}, []);
 };
 
-export {
-	toBoolean,
-	toString,
-	toInteger
-};
-
-export {
-	isBoolean,
-	isString,
-	isFunction,
-	isObject,
-	isObjectOfType,
-	isArray,
-	isArrayOfStrings
-};
-
-export {
-	flattenArray
+module.exports = {
+	toBoolean: toBoolean,
+	toString: toString,
+	toInteger: toInteger,
+	isBoolean: isBoolean,
+	isString: isString,
+	isFunction: isFunction,
+	isObject: isObject,
+	isObjectOfType: isObjectOfType,
+	isArray: isArray,
+	isArrayOfStrings: isArrayOfStrings,
+	flattenArray: flattenArray
 };

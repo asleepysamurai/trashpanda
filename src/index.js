@@ -4,11 +4,18 @@
  * TrashPanda Entry Point
  */
 
-import Application from './application';
+let Application = require('./application');
 
-export
-default class TrashPanda {
-	constructor() {
-		return new(Application(true))();
-	}
+function factory(opts) {
+	/**
+	 * Why use a factory instead of just calling TrashPanda directly?
+	 * Future proofing in case we need to add private methods later.
+	 */
+	function TrashPanda(opts) {
+		return Application(opts, true);
+	};
+
+	return TrashPanda(opts);
 };
+
+module.exports = factory;

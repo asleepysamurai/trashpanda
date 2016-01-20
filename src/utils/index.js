@@ -4,15 +4,13 @@
  * Utility methods
  */
 
-// Object Helpers
-import {
-	setters, getters
-}
-from './objects';
-import types from './types';
+let merge = require('utils-merge');
 
-export {
-	setters,
-	getters,
-	types
-};
+let types = require('./types');
+let objects = require('./objects');
+
+let mergedUtils = {};
+merge(mergedUtils, types);
+merge(mergedUtils, objects);
+
+module.exports = mergedUtils;

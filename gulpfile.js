@@ -1,3 +1,11 @@
+'use strict';
+
+/**
+ * TrashPanda gulpfile
+ * Use --production flag to get production standlone builds.
+ * Use --standalone flag to get development standalone builds.
+ */
+
 var gulp = require('gulp');
 var gutil = require('gulp-util');
 var chalk = require('chalk');
@@ -8,6 +16,12 @@ var buffer = require('vinyl-buffer');
 var browserify = require('browserify');
 var watchify = require('watchify');
 var babel = require('babelify');
+var argv = require('yargs').argv;
+var gulpif = require('gulp-if');
+var uglify = require('gulp-uglify');
+var rename = require('gulp-rename');
+
+var exportName = 'TrashPanda';
 
 function logStart(e) {
 	gutil.log('Starting', '\'' + chalk.cyan(e.task) + '\'...');
@@ -21,12 +35,16 @@ function logDone(e) {
 	);
 };
 
-function compile(watch) {
-	var bundler = watchify(browserify('./src/index.js', {
-		debug: true
-	}).transform(babel.configure({
-		presets: ['es2015']
-	})));
+function compile(watch, debug) {
+	var opts = {
+		debug: argv.production,
+		standalone: argv.production || argv.standalone ? exportName : null
+	};
+
+	var bundler = watchify(browserify('./src/index.js', opts)
+		.transform(babel.configure({
+			presets: ['es2015']
+		})));
 
 	function rebundle() {
 		var startTime = process.hrtime();
@@ -45,11 +63,22 @@ function compile(watch) {
 			})
 			.pipe(source('build.js'))
 			.pipe(buffer())
-			.pipe(sourcemaps.init({
+			.pipe(gulpif(argv.production, uglify().on('error', gutil.log)))
+			.pipe(gulpif(argv.production, rename({
+				suffix: '.min'
+			})))
+			.pipe(gulpif(!argv.production, sourcemaps.init({
 				loadMaps: true
-			}))
-			.pipe(sourcemaps.write('./'))
-			.pipe(gulp.dest('./build'));
+			})))
+			.pipe(gulpif(!argv.production, sourcemaps.write('./')))
+			.pipe(gulp.dest('./build').on('end', function() {
+				logDone({
+					task: 'write',
+					duration: process.hrtime(startTime)
+				});
+				if (!watch)
+					process.exit(0);
+			}));
 	}
 
 	if (watch) {
@@ -73,4 +102,4 @@ gulp.task('watch', function() {
 	return watch();
 });
 
-gulp.task('default', ['watch']);
+gulp.task('default', [argv.production ? 'build' : 'watch']);

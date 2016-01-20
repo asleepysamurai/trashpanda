@@ -12,18 +12,18 @@
  * Always call TrashPanda() to get an instance.
  */
 
-import EventEmitter from 'eventemitter3';
-import mixin from 'merge-descriptors';
-import merge from 'utils-merge';
-import pathUtil from 'path';
+let EventEmitter = require('eventemitter3');
+let mixin = require('merge-descriptors');
+let merge = require('utils-merge');
+let pathUtil = require('path');
 
-import _debug from 'debug';
+let _debug = require('debug');
 let debug = _debug('app');
 
-import utils from './utils';
-import Request from './request';
-import Response from './response';
-import MockDependency from './mockDependency';
+let utils = require('./utils');
+let Request = require('./request');
+let Response = require('./response');
+let MockDependency = require('./mockDependency');
 
 /**
  * Application constants
@@ -249,7 +249,7 @@ function setupRootApp(app, mountNode) {
 	setupRoutingHelpers(app, mountNode);
 };
 
-function factory(force) {
+function factory(opts, force) {
 	//Why no ES6 classes? Because its not possible to dynamically
 	//define methods using class syntax
 
@@ -259,8 +259,8 @@ function factory(force) {
 	let name;
 
 	function TrashPandaApplication(opts) {
-		if (new.target && force !== true)
-			throw new Error('TrashPandaApplication cannot be instantiated using the new keyword. Use \'TrashPanda({name:<myApp>})\' to get a new TrashPandaApplication.');
+		if (force !== true)
+			throw new Error('TrashPandaApplication cannot be instantiated directly. Use \'TrashPanda({name:<myApp>})\' to get a new TrashPandaApplication.');
 
 		if (!(opts && opts.name))
 			throw new Error('TrashPandaApplication\'s must have a name property. Ex: TrashPanda({name:<myApp>}).');
@@ -547,8 +547,7 @@ function factory(force) {
 		return authoritativeApp;
 	};
 
-	return new TrashPandaApplication(name);
+	return new TrashPandaApplication(opts);
 };
 
-export
-default factory;
+module.exports = factory;

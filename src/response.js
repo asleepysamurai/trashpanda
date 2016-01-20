@@ -10,11 +10,11 @@
  * TrashPanda Response
  */
 
-import pathToRegex from 'path-to-regexp';
-import merge from 'utils-merge';
-import utils from './utils';
+let pathToRegex = require('path-to-regexp');
+let merge = require('utils-merge');
+let utils = require('./utils');
 
-import _debug from 'debug';
+let _debug = require('debug');
 let debug = _debug('response');
 
 function factory(opts) {
@@ -152,5 +152,4 @@ function factory(opts) {
 	return new TrashPandaResponse(opts);
 };
 
-export
-default factory;
+module.exports = factory;

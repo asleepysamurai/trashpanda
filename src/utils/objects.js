@@ -5,17 +5,17 @@
  * Provides standard getters and setters
  */
 
-import types from './types';
+let types = require('./types');
 
 let setters = {
 	boolean: function(key, value) {
-		this[key] = type.toBoolean(value);
+		this[key] = types.toBoolean(value);
 	},
 	string: function(key, value) {
-		this[key] = type.toString(value);
+		this[key] = types.toString(value);
 	},
 	integer: function(key, value) {
-		this[key] = type.toInteger(value);
+		this[key] = types.toInteger(value);
 	}
 };
 
@@ -25,7 +25,7 @@ let getters = {
 	}
 };
 
-export {
-	setters,
-	getters
+module.exports = {
+	setters: setters,
+	getters: getters
 };
