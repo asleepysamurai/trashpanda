@@ -25,6 +25,7 @@ function factory(opts) {
 	function TrashPandaResponse(opts) {
 		this.app = opts.app;
 		this.req = opts.req;
+		this.router = opts.router;
 
 		callback = opts.callback;
 		responseEnded = false;
@@ -59,20 +60,20 @@ function factory(opts) {
 		return this.status(status).end(null, url);
 	};
 
-	TrashPandaResponse.prototype.render = function(view, locals, callback) {
+	TrashPandaResponse.prototype.render = function(view, locals = {}, callback) {
 		let renderOpts = {
 			_locals: locals,
 			mount: !callback
 		};
 
-		this.app.render(view, renderOpts, callback || function(err, renderedView) {
+		this.app.render(view, renderOpts, callback || ((err, renderedView) => {
 			if (!err)
 				return this.status(200).send(renderedView);
 
-			var errMsg = 'Render failed with error:\n${err.message}\n${err.stack}';
+			var errMsg = `Render failed with error:\n${err.message}\n${err.stack}`;
 			debug(errMsg);
 			return this.status(500).send(errMsg);
-		});
+		}));
 	};
 
 	TrashPandaResponse.prototype.sendStatus = function(status) {
@@ -147,6 +148,10 @@ function factory(opts) {
 	TrashPandaResponse.prototype.status = function(statusCode) {
 		status = statusCode;
 		return this;
+	};
+
+	TrashPandaResponse.prototype.update = function(opts) {
+		merge(this, opts);
 	};
 
 	return new TrashPandaResponse(opts);

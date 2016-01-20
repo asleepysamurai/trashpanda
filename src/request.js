@@ -11,8 +11,15 @@
  */
 
 let pathToRegex = require('path-to-regexp');
+let urlUtils = require('url');
 let merge = require('utils-merge');
 let utils = require('./utils');
+
+function addLeadingSlashIfNotPresent(str) {
+	if (str[0] != '/')
+		return '/' + str;
+	return str;
+};
 
 function factory(opts) {
 	let href;
@@ -45,18 +52,24 @@ function factory(opts) {
 		href = opts.url;
 		this.app = opts.app;
 
-		let parsedUrl = url.parse(href, true);
+		let parsedUrl = urlUtils.parse(href, true);
 		merge(this, parsedUrl);
 
 		this.method = opts.method;
-		this.baseUrl = getMatchingBaseUrl(app, this.path);
+		this.baseUrl = getMatchingBaseUrl(this.app, this.path);
 
 		this.originalUrl = this.path;
-		this.path = this.path.replace(this.baseUrl, '');
+		this.path = addLeadingSlashIfNotPresent(this.path.replace(this.baseUrl, ''));
 		this.url = this.path;
 
-		this.pathname = this.pathname.replace(this.baseUrl, '');
-		this.body = data;
+		//If cross domain call, then reset originalUrl and url
+		if (!(this.protocol == window.location.protocol && this.host == window.location.host)) {
+			this.originalUrl = href;
+			this.url = href;
+		}
+
+		this.pathname = addLeadingSlashIfNotPresent(this.pathname.replace(this.baseUrl, ''));
+		this.body = opts.data;
 
 		this.target = opts.target;
 	};

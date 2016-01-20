@@ -15,6 +15,8 @@ let merge = require('utils-merge');
 let urlUtils = require('url');
 let async = require('async');
 
+let utils = require('./utils');
+
 function factory(opts) {
 	let options = {};
 	let routes = {};
@@ -76,23 +78,23 @@ function factory(opts) {
 		merge(options, opts);
 	};
 
-	TrashPandaRouter.prototype.use(path, handler) {
+	TrashPandaRouter.prototype.use = function(path, handler) {
 		addHandlerForPath(path, handler);
 	};
 
-	TrashPandaRouter.prototype.route(path) {
+	TrashPandaRouter.prototype.route = function(path) {
 		let route = {};
 		methods.forEach(methodName => route[methodName] = this[methodName].bind(this, path));
 		return route;
 	};
 
 	methods.forEach((methodName) => {
-		TrashPandaRouter.prototype[methodName] = function(...params) {
-			addHandlerForPath(path, handler, methodName, true);
+		TrashPandaRouter.prototype[methodName] = function(path, handler, ...params) {
+			addHandlerForPath(path, handler, methodName, ...params);
 		};
 	});
 
-	TrashPandaRouter.prototype.resolve(req, res, next) {
+	TrashPandaRouter.prototype.resolve = function(req, res, next) {
 		/**
 		 * Attempts to route a req client side.
 		 * Returns true if routing can be handled locally.
@@ -173,10 +175,15 @@ function factory(opts) {
 			req.update({
 				params: mappedParams,
 				route: handler.exec.route,
-				router: that
+				router: that,
+				app: options.app
+			});
+			res.update({
+				router: that,
+				app: options.app
 			});
 
-			handler.exec.call(null, req, res, next);
+			handler.exec(req, res, next);
 		};
 
 		async.eachSeries(execHandlers, resolveWithUpdatedRequest.bind(null, req, res), err => {

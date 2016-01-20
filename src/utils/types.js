@@ -5,7 +5,7 @@
  */
 
 function isType(value, typeName) {
-	return Object.prototype.toString.call(value) === '[object ${typeName}]';
+	return Object.prototype.toString.call(value) === `[object ${typeName}]`;
 };
 
 function isBoolean(value) {
@@ -43,7 +43,7 @@ function isFunction(value) {
 };
 
 function isObject(value) {
-	return isType(value, 'Object');
+	return typeof value == 'object' && value != null;
 };
 
 function isObjectOfType(value, _Class) {
@@ -51,7 +51,7 @@ function isObjectOfType(value, _Class) {
 };
 
 function toBoolean(value) {
-	return new Boolean(value);
+	return !!value;
 };
 
 function toString(value) {
@@ -70,6 +70,18 @@ function flattenArray(value) {
 	}, []);
 };
 
+function hasProperties(value, properties) {
+	if (!value.hasOwnProperty)
+		return false;
+
+	let missingProperties = properties.filter(property => value.hasOwnProperty(property));
+	return !missingProperties.length;
+};
+
+function isTrashPandaApplication(value) {
+	return hasProperties(value, ['use', 'load', 'engine']);
+};
+
 module.exports = {
 	toBoolean: toBoolean,
 	toString: toString,
@@ -81,5 +93,7 @@ module.exports = {
 	isObjectOfType: isObjectOfType,
 	isArray: isArray,
 	isArrayOfStrings: isArrayOfStrings,
+	hasProperties: hasProperties,
+	isTrashPandaApplication: isTrashPandaApplication,
 	flattenArray: flattenArray
 };

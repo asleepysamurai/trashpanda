@@ -10,7 +10,6 @@ var gulp = require('gulp');
 var gutil = require('gulp-util');
 var chalk = require('chalk');
 var prettyTime = require('pretty-hrtime');
-var sourcemaps = require('gulp-sourcemaps');
 var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 var browserify = require('browserify');
@@ -67,10 +66,6 @@ function compile(watch, debug) {
 			.pipe(gulpif(argv.production, rename({
 				suffix: '.min'
 			})))
-			.pipe(gulpif(!argv.production, sourcemaps.init({
-				loadMaps: true
-			})))
-			.pipe(gulpif(!argv.production, sourcemaps.write('./')))
 			.pipe(gulp.dest('./build').on('end', function() {
 				logDone({
 					task: 'write',

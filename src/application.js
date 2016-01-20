@@ -21,6 +21,7 @@ let _debug = require('debug');
 let debug = _debug('app');
 
 let utils = require('./utils');
+let Router = require('./router');
 let Request = require('./request');
 let Response = require('./response');
 let MockDependency = require('./mockDependency');
@@ -47,11 +48,12 @@ let view = {
 	engines: {},
 	cache: {}
 };
+let mountNode;
 
 function getDefaultSettings() {
 	let settings = {
 		'case sensitive routing': false,
-		env: window.env.TRASHPANDA_ENV || window.env.NODE_ENV || 'development',
+		env: (window.env && (window.env.TRASHPANDA_ENV || window.env.NODE_ENV)) || 'development',
 		etag: 'weak',
 		'jsonp callback name': 'callback',
 		'json replacer': null,
@@ -70,6 +72,9 @@ function getDefaultSettings() {
 };
 
 function resolveMockDependencies(dependencyNames, mocks) {
+	if (!dependencyNames)
+		return [];
+
 	if (!(utils.isArrayOfStrings(dependencyNames)))
 		throw new Error('Application dependencies should be an array of dependency names.');
 
@@ -89,12 +94,12 @@ function resolveDependencies(dependencyNames, apps) {
 
 	let resolvedDependencies = dependencyNames.map(name => {
 		if (!apps.hasOwnProperty(name))
-			throw new Error('Dependency ${name} not available or was not inited properly.');
+			throw new Error(`Dependency ${name} not available or was not inited properly.`);
 
 		return apps[name];
 	});
 
-	return resolveDependencies;
+	return resolvedDependencies;
 };
 
 function initApps(app, mocks, apps, rootApp) {
@@ -105,14 +110,14 @@ function initApps(app, mocks, apps, rootApp) {
 	});
 
 	if (app.state == states.preInit) {
-		debug('Initing app ${app.name}...');
+		debug(`Initing app ${app.name}...`);
 
 		app.dependencies = resolveMockDependencies(app.dependencies, mocks);
 		app.state = states.inited;
 		apps[app.name] = app;
 		app.emit('init', app);
 
-		debug('Initing app ${app.name}...[DONE]');
+		debug(`Initing app ${app.name}...[DONE]`);
 	}
 };
 
@@ -125,7 +130,7 @@ function loadApps(apps) {
 	debug('Loading apps...');
 
 	doOnApps(apps, app => {
-		debug('Loading app ${app.name}...');
+		debug(`Loading app ${app.name}...`);
 
 		if (app.state == states.inited) {
 			app.dependencies = resolveDependencies(app.dependencies, apps);
@@ -133,7 +138,7 @@ function loadApps(apps) {
 			app.emit('load', app);
 		}
 
-		debug('Loading app ${app.name}...[DONE]');
+		debug(`Loading app ${app.name}...[DONE]`);
 	});
 
 	debug('Loading apps...[DONE]');
@@ -143,26 +148,26 @@ function reconcileMocksWithApps(mocks, apps) {
 	debug('Reconciling event handlers...');
 
 	doOnApps(apps, app => {
-		debug('Reconciling event handlers for app ${app.name}...');
+		debug(`Reconciling event handlers for app ${app.name}...`);
 
 		let mock = mocks[app.name];
 		if (mock)
 			mock.reconcile(app);
 
-		debug('Reconciling event handlers for app ${app.name}...[DONE]');
+		debug(`Reconciling event handlers for app ${app.name}...[DONE]`);
 	});
 
 	debug('Reconciling event handlers...[DONE]');
 };
 
 function resolveUrl(app, url, target = null, method = 'get', data = null, callback) {
-	debug('Resolving url: ${url}...');
+	debug(`Resolving url: ${url}...`);
 
 	function next(err, status, data, redirectUrl) {
 		if (err)
-			debug('Error while resolving ${url}:\n${err.message}\n${err.stack}');
+			debug(`Error while resolving ${url}:\n${err.message}\n${err.stack}`);
 		else {
-			debug('Resolving url: ${url}... [Done][${status}] +NNNms');
+			debug(`Resolving url: ${url}... [Done][${status}] +NNNms`);
 
 			if (redirectUrl)
 				return resolveUrl(app, redirectUrl, callback);
@@ -226,12 +231,12 @@ function setupRoutingHelpers(app, mountNode) {
 
 	let observer = new MutationObserver(records => {
 		records.forEach(record => {
-			Array.prototype.call(record.addedNodes, node => {
+			Array.prototype.forEach.call(record.addedNodes, node => {
 				if (utils.isObjectOfType(node, window.HTMLAnchorElement))
 					node.addEventListener('click', route);
 			});
 
-			Array.prototype.call(record.removedNodes, node => {
+			Array.prototype.forEach.call(record.removedNodes, node => {
 				if (utils.isObjectOfType(node, window.HTMLAnchorElement))
 					node.removeEventListener('click', route);
 			});
@@ -255,8 +260,6 @@ function factory(opts, force) {
 
 	let router;
 	let childApps = [];
-	let mountNode;
-	let name;
 
 	function TrashPandaApplication(opts) {
 		if (force !== true)
@@ -274,7 +277,7 @@ function factory(opts, force) {
 			enumerable: true,
 			configurable: false,
 			get: function() {
-				return name;
+				return opts.name;
 			}
 		});
 
@@ -290,11 +293,15 @@ function factory(opts, force) {
 	let prototype = Object.create(EventEmitter.prototype);
 	TrashPandaApplication.prototype = prototype;
 
-	TrashPandaApplication.prototype.emit = function(...params) {
-		if (this.state != states.loaded)
-			throw new Error('Cannot emit events if application state is not \'${states.loaded}\'');
+	let emitEvent = TrashPandaApplication.prototype.emit;
 
-		prototype.emit.call(this, ...params);
+	TrashPandaApplication.prototype.emit = function(...params) {
+		let exemptedEvents = ['mount', 'init'];
+
+		if (exemptedEvents.indexOf(params[0]) == -1 && this.state != states.loaded)
+			throw new Error(`Cannot emit events if application state is not '${states.loaded}'`);
+
+		emitEvent.call(this, ...params);
 	};
 
 	Object.defineProperty(TrashPandaApplication.prototype, 'router', {
@@ -374,12 +381,12 @@ function factory(opts, force) {
 	};
 	TrashPandaApplication.prototype.get = function(name, callback) {
 		if (utils.isString(name) && !callback)
-			return settings[name];
+			return this.locals.settings[name];
 
 		this.router.get(...arguments);
 	};
 	TrashPandaApplication.prototype.set = function(name, value) {
-		settings[name] = value;
+		this.locals.settings[name] = value;
 	};
 
 	TrashPandaApplication.prototype.engine = function(ext, renderer) {
@@ -395,22 +402,26 @@ function factory(opts, force) {
 	};
 
 	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded = true, _mountNode = document.body, callback) {
+		var that = this;
+
 		function loadApplication(ev = null, callback = callback) {
 			debug('Initing application...');
 
-			this.root = true;
+			that.root = true;
 			mountNode = _mountNode;
 
-			setupRootApp(this, mountNode);
+			setupRootApp(that, mountNode);
 
-			initApps(this, mocks, this);
+			initApps(that, mocks, apps, that);
 			reconcileMocksWithApps(mocks, apps);
-			loadApps(this, apps, this);
+			loadApps(apps);
 
 			debug('Initing application...[DONE]');
 
-			resolveUrl(this, window.location.href);
-			callback();
+			resolveUrl(that, window.location.href);
+
+			if (utils.isFunction(callback))
+				callback();
 		};
 
 		if (!waitForDOMContentLoaded)
@@ -431,22 +442,27 @@ function factory(opts, force) {
 		if (!engine) {
 			engine = this.get('view engine');
 			if (!engine)
-				throw new Error('No view engine available for file extension \'${ext}\'. Register an engine for this file extension by using \'app.engine\'.');
+				throw new Error(`No view engine available for file extension '${ext}'. Register an engine for this file extension by using 'app.engine'.`);
 			else
-				debug('No view engine available for file extension \'${ext}\'. Using default view engine. Register an engine for this file extension by using \'app.engine\'.');
+				debug(`No view engine available for file extension '${ext}'. Using default view engine. Register an engine for this file extension by using 'app.engine'.`);
 		}
 
-		renderOpts.merge(this.locals);
-		renderOpts.merge(options._locals);
-		renderOpts.merge(options);
+		let renderOpts = {};
+		merge(renderOpts, this.locals);
+		merge(renderOpts, options._locals);
+		merge(renderOpts, options);
 
 		renderOpts.cache = !renderOpts.hasOwnProperty('cache') ? this.enabled('view cache') : renderOpts.cache;
 
 		function render(compiledView, options, callback) {
 			let renderableView = compiledView(options);
 
-			if (renderOpts.mount)
-				engine.mount(mountNode, compiledView);
+			if (renderOpts.mount) {
+				if (utils.isFunction(engine.mount))
+					engine.mount(mountNode, renderableView);
+				else
+					mountNode.innerHTML = renderableView;
+			}
 
 			callback(null, renderableView, renderOpts);
 		};
@@ -455,13 +471,13 @@ function factory(opts, force) {
 			let compiledView = engine.compile(viewTemplate, options);
 
 			if (renderOpts.cache)
-				views.cache[viewName] = compiledView;
+				view.cache[viewName] = compiledView;
 
 			render(compiledView, options, callback);
 		};
 
 		if (renderOpts.cache) {
-			let _view = views.cache[viewName];
+			let _view = view.cache[viewName];
 			render(_view, renderOpts, callback);
 		} else {
 			let viewTemplate = this.get('views');
@@ -495,7 +511,12 @@ function factory(opts, force) {
 		routeHandlers = utils.flattenArray(routeHandlers);
 
 		routeHandlers.forEach(handler => {
-			var handlerIsApp = utils.isObjectOfType(handler, TrashPandaApplication);
+			// Why not just use isObjectOfType?
+			// Because TrashPandaApplication is dynamically defined,
+			// so isObjectOfType would always return false, unless
+			// the definition is cached, which would cause issues with
+			// 'private' variables.
+			var handlerIsApp = utils.isTrashPandaApplication(handler);
 
 			if (!(handlerIsApp || utils.isFunction(handler)))
 				throw new Error('Middleware should be a function or a TrashPandaApplication.');
@@ -505,6 +526,13 @@ function factory(opts, force) {
 
 			childApps.push(handler);
 
+			(function propagateViewEngine() {
+				if (!handler.get('view engine')) {
+					let thisViewEngine = this.get('view engine');
+					handler.set('view engine', thisViewEngine);
+				}
+			})();
+
 			if (handler.mountPath == defaultMountPath)
 				handler.mountPath = path;
 			else {
@@ -513,7 +541,7 @@ function factory(opts, force) {
 				utils.isArray(path) ? handler.mountPath.push(...path) : handler.mountPath.push(path);
 			}
 
-			this.router.use(path, handler.resolve);
+			this.router.use(path, handler.resolve.bind(handler));
 
 			if (handler.emit && utils.isFunction(handler.emit))
 				handler.emit('mount', this);
@@ -526,7 +554,7 @@ function factory(opts, force) {
 
 	TrashPandaApplication.prototype.resolveUrl = function(url, data = null, target = null, callback) {
 		if (authoritativeApp != this) {
-			let err = new Error('${this.name} does not have authority to initiate redirections. Get the authoritative app using \'app.getAuthoritativeApp()\'.');
+			let err = new Error(`${this.name} does not have authority to initiate redirections. Get the authoritative app using 'app.getAuthoritativeApp()'.`);
 			err.code = 'NOAUTHORITY';
 			return callback(err);
 		}
