@@ -235,11 +235,6 @@ function setupRoutingHelpers(app, mountNode) {
 				if (utils.isObjectOfType(node, window.HTMLAnchorElement))
 					node.addEventListener('click', route);
 			});
-
-			Array.prototype.forEach.call(record.removedNodes, node => {
-				if (utils.isObjectOfType(node, window.HTMLAnchorElement))
-					node.removeEventListener('click', route);
-			});
 		});
 	});
 
@@ -482,21 +477,27 @@ function factory(opts, force) {
 		} else {
 			let viewTemplate = this.get('views');
 
-			if (utils.isFunction(viewTemplate)) {
+			//Check if viewName is the name of a view in viewTemplate
+			if (utils.isObject(viewTemplate))
+				viewTemplate = viewTemplate[viewName];
+
+			//Else if viewTemplate not set, set it to builtin xhr helper
+			//Allows you to make an ajax request for the viewName.
+			//viewName should be an accessible url ofcourse.
+			if (!viewTemplate)
+				viewTemplate = utils.xhr;
+
+			if (utils.isString(viewTemplate))
+				compileAndRender(viewTemplate, renderOpts, callback);
+			else if (utils.isFunction(viewTemplate)) {
 				viewTemplate(viewName, function(err, viewTemplate) {
 					if (err)
-						return callback(err);
+						return callback(new Error(`Error occurred while looking up view ${viewName}:\n${err.message}\n${err.stack}`));
 
 					compileAndRender(viewTemplate, renderOpts, callback);
 				});
-			} else if (utils.isObject(viewTemplate)) {
-				viewTemplate = viewTemplate[viewName];
-
-				if (!viewTemplate)
-					throw new Error('Failed to lookup view: ' + viewName);
-
-				compileAndRender(viewTemplate, renderOpts, callback);
-			}
+			} else
+				return callback(new Error(`Failed to lookup view: ${viewName}`));
 		}
 	};
 
