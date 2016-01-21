@@ -398,7 +398,7 @@ function factory(opts, force) {
 		ext.forEach((extName) => view.engines[extName] = renderer);
 	};
 
-	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded = true, _mountNode = document.body, callback) {
+	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded = true, _mountNode, callback) {
 		var that = this;
 
 		function loadApplication(ev = null, callback = callback) {
@@ -406,6 +406,12 @@ function factory(opts, force) {
 
 			that.root = true;
 			mountNode = _mountNode;
+
+			if (!mountNode) {
+				mountNode = document.createElement('div');
+				mountNode.setAttribute('class', 'tp-mount-node');
+				document.body.appendChild(mountNode);
+			}
 
 			setupRootApp(that, mountNode);
 
