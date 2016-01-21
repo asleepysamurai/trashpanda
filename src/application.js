@@ -531,6 +531,9 @@ function factory(opts, force) {
 			childApps.push(handler);
 
 			(function propagateLocals(app) {
+				if (!handler.get('view engine'))
+					handler.set('view engine', app.get('view engine'));
+
 				let mergedLocals = {};
 
 				merge(mergedLocals, app.locals);
