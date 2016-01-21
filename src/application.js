@@ -64,6 +64,7 @@ function getDefaultSettings() {
 		views: null,
 		'view engine': null,
 		'x-powered-by': true,
+		bootstrap: false
 	};
 
 	settings['view cache'] = settings.env === 'production';
@@ -407,6 +408,11 @@ function factory(opts, force) {
 			that.root = true;
 			mountNode = _mountNode;
 
+			var didBootstrap = that.enabled('bootstrap');
+
+			if (didBootstrap)
+				mountNode = document.querySelectorAll('div.tp-mount-node')[0];
+
 			if (!mountNode) {
 				mountNode = document.createElement('div');
 				mountNode.setAttribute('class', 'tp-mount-node');
@@ -421,7 +427,10 @@ function factory(opts, force) {
 
 			debug('Initing application...[DONE]');
 
-			resolveUrl(that, window.location.href);
+			if (!didBootstrap)
+				resolveUrl(that, window.location.href);
+
+			that.disable('bootstrap');
 
 			if (utils.isFunction(callback))
 				callback();
