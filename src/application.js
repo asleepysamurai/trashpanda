@@ -179,6 +179,7 @@ function resolveUrl(app, url, target = null, method = 'get', data = null, callba
 	let req = Request({
 		app: app,
 		url: url,
+		router: app.router,
 		method: method,
 		data: data,
 		target: target
@@ -186,6 +187,7 @@ function resolveUrl(app, url, target = null, method = 'get', data = null, callba
 	let res = Response({
 		app: app,
 		req: req,
+		router: app.router,
 		callback: next
 	});
 
@@ -481,15 +483,16 @@ function factory(opts, force) {
 			if (utils.isObject(viewTemplate))
 				viewTemplate = viewTemplate[viewName];
 
+			if (utils.isObject(viewName))
+				viewTemplate = viewName;
+
 			//Else if viewTemplate not set, set it to builtin xhr helper
 			//Allows you to make an ajax request for the viewName.
 			//viewName should be an accessible url ofcourse.
 			if (!viewTemplate)
 				viewTemplate = utils.xhr;
 
-			if (utils.isString(viewTemplate))
-				compileAndRender(viewTemplate, renderOpts, callback);
-			else if (utils.isFunction(viewTemplate)) {
+			if (utils.isFunction(viewTemplate)) {
 				viewTemplate(viewName, function(err, viewTemplate) {
 					if (err)
 						return callback(new Error(`Error occurred while looking up view ${viewName}:\n${err.message}\n${err.stack}`));
@@ -497,7 +500,7 @@ function factory(opts, force) {
 					compileAndRender(viewTemplate, renderOpts, callback);
 				});
 			} else
-				return callback(new Error(`Failed to lookup view: ${viewName}`));
+				compileAndRender(viewTemplate, renderOpts, callback);
 		}
 	};
 

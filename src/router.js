@@ -146,7 +146,7 @@ function factory(opts) {
 			let matcher = routes[matcherKey].matcher;
 			let matches = matcher.exec(path);
 
-			if (matches[0] && path.indexOf(matches[0]) == 0) {
+			if (matches && matches[0] && path.indexOf(matches[0]) == 0) {
 				let handlers = routes[matcherKey].handlers;
 
 				handlers.forEach(handler => {

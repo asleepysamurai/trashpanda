@@ -141,7 +141,7 @@ function factory(opts) {
 			511: 'Network Authentication Required'
 		};
 
-		statusDescription = statusMap[status] || status;
+		let statusDescription = statusMap[status] || status;
 		return this.status(status).send(statusDescription);
 	};
 
