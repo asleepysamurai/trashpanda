@@ -530,12 +530,14 @@ function factory(opts, force) {
 
 			childApps.push(handler);
 
-			(function propagateViewEngine() {
-				if (!handler.get('view engine')) {
-					let thisViewEngine = this.get('view engine');
-					handler.set('view engine', thisViewEngine);
-				}
-			})();
+			(function propagateLocals(app) {
+				let mergedLocals = {};
+
+				merge(mergedLocals, app.locals);
+				merge(mergedLocals, handler.locals);
+
+				handler.locals = mergedLocals;
+			})(this);
 
 			if (handler.mountPath == defaultMountPath)
 				handler.mountPath = path;

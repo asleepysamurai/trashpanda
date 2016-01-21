@@ -20,6 +20,7 @@ let debug = _debug('response');
 function factory(opts) {
 	let callback;
 	let status;
+	let title;
 	let responseEnded;
 
 	function TrashPandaResponse(opts) {
@@ -43,6 +44,9 @@ function factory(opts) {
 		this.status(status || 200);
 		responseEnded = true;
 		this.router.setAsAuthoritativeRouter();
+
+		if (title)
+			document.title = title;
 
 		if (utils.isFunction(callback))
 			callback(null, status, data, redirectUrl);
@@ -152,6 +156,10 @@ function factory(opts) {
 
 	TrashPandaResponse.prototype.update = function(opts) {
 		merge(this, opts);
+	};
+
+	TrashPandaResponse.prototype.title = function(val) {
+		title = val;
 	};
 
 	return new TrashPandaResponse(opts);
