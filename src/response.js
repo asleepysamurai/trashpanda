@@ -14,8 +14,7 @@ let pathToRegex = require('path-to-regexp');
 let merge = require('utils-merge');
 let utils = require('./utils');
 
-let _debug = require('debug');
-let debug = _debug('response');
+let debug = utils.debug('TrashPanda:response');
 
 function factory(opts) {
 	let callback;

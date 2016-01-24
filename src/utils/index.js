@@ -5,9 +5,12 @@
  */
 
 let merge = require('utils-merge');
+let debug = require('bows');
 
 let types = require('./types');
 let objects = require('./objects');
+
+let debuggers = {};
 
 let mergedUtils = {};
 merge(mergedUtils, types);
@@ -34,6 +37,13 @@ mergedUtils.xhr = function xhr(url, callback) {
 		if (types.isFunction(callback))
 			callback(new Error(`XHR request failed:\n${err.message}\n${err.stack}`));
 	}
+};
+
+mergedUtils.debug = function(namespace) {
+	if (!debuggers[namespace])
+		debuggers[namespace] = debug(namespace);
+
+	return debuggers[namespace];
 };
 
 module.exports = mergedUtils;

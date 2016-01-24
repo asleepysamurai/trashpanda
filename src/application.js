@@ -17,14 +17,13 @@ let mixin = require('merge-descriptors');
 let merge = require('utils-merge');
 let pathUtil = require('path');
 
-let _debug = require('debug');
-let debug = _debug('app');
-
 let utils = require('./utils');
 let Router = require('./router');
 let Request = require('./request');
 let Response = require('./response');
 let MockDependency = require('./mockDependency');
+
+let debug = utils.debug('TrashPanda:app');
 
 /**
  * Application constants
@@ -406,14 +405,11 @@ function factory(opts, force) {
 			debug('Initing application...');
 
 			that.root = true;
-			mountNode = _mountNode;
 
-			var didBootstrap = that.enabled('bootstrap');
+			mountNode = _mountNode || document.querySelectorAll('div.tp-mount-node')[0];
+			let mountNodeExists = !!mountNode;
 
-			if (didBootstrap)
-				mountNode = document.querySelectorAll('div.tp-mount-node')[0];
-
-			if (!mountNode) {
+			if (!mountNodeExists) {
 				mountNode = document.createElement('div');
 				mountNode.setAttribute('class', 'tp-mount-node');
 				document.body.appendChild(mountNode);
@@ -427,7 +423,7 @@ function factory(opts, force) {
 
 			debug('Initing application...[DONE]');
 
-			if (!didBootstrap)
+			if (!(that.enabled('bootstrap') && mountNodeExists))
 				resolveUrl(that, window.location.href);
 
 			that.disable('bootstrap');
