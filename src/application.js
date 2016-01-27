@@ -423,8 +423,14 @@ function factory(opts, force) {
 
 			debug('Initing application...[DONE]');
 
-			if (!(that.enabled('bootstrap') && mountNodeExists))
+			if (!(that.enabled('bootstrap') && mountNodeExists)) {
+				if (that.enabled('bootstrap'))
+					debug(`MountNode ('.tp-mount-div') does not exist. Not bootstrapping.`);
+
 				resolveUrl(that, window.location.href);
+			} else {
+				debug(`Bootstrap enabled. Not resolving initial url ${window.location.href}.`);
+			}
 
 			that.disable('bootstrap');
 
