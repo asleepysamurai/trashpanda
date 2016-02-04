@@ -38,8 +38,8 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING
 OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 `;
 
-debug(banner);
-debug(license);
+debug(banner)();
+debug(license)();
 
 function factory(opts) {
 	/**

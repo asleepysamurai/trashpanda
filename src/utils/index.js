@@ -40,10 +40,17 @@ mergedUtils.xhr = function xhr(url, callback) {
 };
 
 mergedUtils.debug = function(namespace) {
-	if (!debuggers[namespace])
+	if (!debuggers[namespace]) {
 		debuggers[namespace] = debug(namespace);
+	}
 
-	return debuggers[namespace];
+	return function(str) {
+		var now = Date.now();
+		var diff = now - (debuggers[namespace].lastCalled || now);
+		debuggers[namespace].lastCalled = now;
+
+		return (debuggers[namespace]).bind(null, str, '+' + diff + 'ms');
+	}
 };
 
 module.exports = mergedUtils;

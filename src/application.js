@@ -110,14 +110,14 @@ function initApps(app, mocks, apps, rootApp) {
 	});
 
 	if (app.state == states.preInit) {
-		debug(`Initing app ${app.name}...`);
+		debug(`Initing app ${app.name}...`)();
 
 		app.dependencies = resolveMockDependencies(app.dependencies, mocks);
 		app.state = states.inited;
 		apps[app.name] = app;
 		app.emit('init', app);
 
-		debug(`Initing app ${app.name}...[DONE]`);
+		debug(`Initing app ${app.name}...[DONE]`)();
 	}
 };
 
@@ -127,10 +127,10 @@ function doOnApps(apps, action) {
 };
 
 function loadApps(apps) {
-	debug('Loading apps...');
+	debug('Loading apps...')();
 
 	doOnApps(apps, app => {
-		debug(`Loading app ${app.name}...`);
+		debug(`Loading app ${app.name}...`)();
 
 		if (app.state == states.inited) {
 			app.dependencies = resolveDependencies(app.dependencies, apps);
@@ -138,36 +138,36 @@ function loadApps(apps) {
 			app.emit('load', app);
 		}
 
-		debug(`Loading app ${app.name}...[DONE]`);
+		debug(`Loading app ${app.name}...[DONE]`)();
 	});
 
-	debug('Loading apps...[DONE]');
+	debug('Loading apps...[DONE]')();
 };
 
 function reconcileMocksWithApps(mocks, apps) {
-	debug('Reconciling event handlers...');
+	debug('Reconciling event handlers...')();
 
 	doOnApps(apps, app => {
-		debug(`Reconciling event handlers for app ${app.name}...`);
+		debug(`Reconciling event handlers for app ${app.name}...`)();
 
 		let mock = mocks[app.name];
 		if (mock)
 			mock.reconcile(app);
 
-		debug(`Reconciling event handlers for app ${app.name}...[DONE]`);
+		debug(`Reconciling event handlers for app ${app.name}...[DONE]`)();
 	});
 
-	debug('Reconciling event handlers...[DONE]');
+	debug('Reconciling event handlers...[DONE]')();
 };
 
 function resolveUrl(app, url, target = null, method = 'get', data = null, callback) {
-	debug(`Resolving url: ${url}...`);
+	debug(`Resolving url: ${url}...`)();
 
 	function next(err, status, data, redirectUrl) {
 		if (err)
-			debug(`Error while resolving ${url}:\n${err.message}\n${err.stack}`);
+			debug(`Error while resolving ${url}:\n${err.message}\n${err.stack}`)();
 		else {
-			debug(`Resolving url: ${url}... [Done][${status}] +NNNms`);
+			debug(`Resolving url: ${url}... [Done][${status}]`)();
 
 			if (redirectUrl)
 				return resolveUrl(app, redirectUrl, callback);
@@ -402,7 +402,7 @@ function factory(opts, force) {
 		var that = this;
 
 		function loadApplication(ev = null, callback = callback) {
-			debug('Initing application...');
+			debug('Initing application...')();
 
 			that.root = true;
 
@@ -421,15 +421,15 @@ function factory(opts, force) {
 			reconcileMocksWithApps(mocks, apps);
 			loadApps(apps);
 
-			debug('Initing application...[DONE]');
+			debug('Initing application...[DONE]')();
 
 			if (!(that.enabled('bootstrap') && mountNodeExists)) {
 				if (that.enabled('bootstrap'))
-					debug(`MountNode ('.tp-mount-div') does not exist. Not bootstrapping.`);
+					debug(`MountNode ('.tp-mount-div') does not exist. Not bootstrapping.`)();
 
 				resolveUrl(that, window.location.href);
 			} else {
-				debug(`Bootstrap enabled. Not resolving initial url ${window.location.href}.`);
+				debug(`Bootstrap enabled. Not resolving initial url ${window.location.href}.`)();
 			}
 
 			that.disable('bootstrap');
@@ -441,9 +441,9 @@ function factory(opts, force) {
 		if (!waitForDOMContentLoaded)
 			return loadApplication();
 
-		debug('Waiting for DOMContentLoaded to fire before initing application...');
+		debug('Waiting for DOMContentLoaded to fire before initing application...')();
 		window.addEventListener('DOMContentLoaded', function(ev) {
-			debug('DOMContentLoaded fired.');
+			debug('DOMContentLoaded fired.')();
 			loadApplication(ev);
 		});
 	};
@@ -458,7 +458,7 @@ function factory(opts, force) {
 			if (!engine)
 				throw new Error(`No view engine available for file extension '${ext}'. Register an engine for this file extension by using 'app.engine'.`);
 			else
-				debug(`No view engine available for file extension '${ext}'. Using default view engine. Register an engine for this file extension by using 'app.engine'.`);
+				debug(`No view engine available for file extension '${ext}'. Using default view engine. Register an engine for this file extension by using 'app.engine'.`)();
 		}
 
 		let renderOpts = {};

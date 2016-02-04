@@ -74,7 +74,7 @@ function factory(opts) {
 				return this.status(200).send(renderedView);
 
 			var errMsg = `Render failed with error:\n${err.message}\n${err.stack}`;
-			debug(errMsg);
+			debug(errMsg)();
 			return this.status(500).send(errMsg);
 		}));
 	};
