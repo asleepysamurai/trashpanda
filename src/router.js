@@ -164,7 +164,7 @@ function factory(opts) {
 		});
 
 		if (!execHandlers.length)
-			res.sendStatus(404);
+			return res.sendStatus(404);
 
 		function resolveWithUpdatedRequest(req, res, handler, next) {
 			var mappedParams = {};

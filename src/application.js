@@ -231,12 +231,18 @@ function setupRoutingHelpers(app, mountNode) {
 			ev.preventDefault();
 	};
 
+	function mutationChecker(nodeList) {
+		Array.prototype.forEach.call(nodeList, node => {
+			if (utils.isObjectOfType(node, window.HTMLAnchorElement))
+				node.addEventListener('click', route);
+			if (node.childNodes && node.childNodes.length)
+				mutationChecker(node.childNodes);
+		});
+	}
+
 	let observer = new MutationObserver(records => {
 		records.forEach(record => {
-			Array.prototype.forEach.call(record.addedNodes, node => {
-				if (utils.isObjectOfType(node, window.HTMLAnchorElement))
-					node.addEventListener('click', route);
-			});
+			mutationChecker(record.addedNodes);
 		});
 	});
 
