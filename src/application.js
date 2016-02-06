@@ -198,13 +198,15 @@ function setAsAuthoritativeApp(app) {
 	authoritativeApp = app;
 };
 
-function setupRoutingHelpers(app, mountNode) {
+function setupRoutingHelpers(app) {
 	/**
 	 * Adds mutation observers to mountNode.
 	 * If any anchor tag gets added, attaches a click
 	 * event listener, which routes the url change
 	 * through app.router.
 	 */
+
+	let mountNode = app.get('mountNode');
 
 	if (!utils.isObjectOfType(mountNode, window.Node))
 		throw new Error('Mount node has to be a Node (see https://developer.mozilla.org/en/docs/Web/API/Node).');
@@ -250,11 +252,16 @@ function setupRoutingHelpers(app, mountNode) {
 		childList: true,
 		subtree: true
 	});
+
+	if (app.enabled('bootstrap'))
+		mutationChecker(mountNode.childNodes);
 };
 
 function setupRootApp(app, mountNode) {
+	app.set('mountNode', mountNode);
+
 	setAsAuthoritativeApp(app);
-	setupRoutingHelpers(app, mountNode);
+	setupRoutingHelpers(app);
 };
 
 function factory(opts, force) {
@@ -394,7 +401,7 @@ function factory(opts, force) {
 
 	TrashPandaApplication.prototype.engine = function(ext, renderer) {
 		// Set files of extension ext to be rendered by renderer
-		var extIsArray = utils.isArrayOfStrings(ext);
+		let extIsArray = utils.isArrayOfStrings(ext);
 		if (!(extIsArray || utils.isString(ext)))
 			throw new Error('Extension should be a string or an array of strings.');
 		if (!utils.isFunction(renderer))
@@ -404,15 +411,16 @@ function factory(opts, force) {
 		ext.forEach((extName) => view.engines[extName] = renderer);
 	};
 
-	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded = true, _mountNode, callback) {
-		var that = this;
+	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded = true, callback) {
+		let that = this;
 
 		function loadApplication(ev = null, callback = callback) {
 			debug('Initing application...')();
 
 			that.root = true;
 
-			mountNode = _mountNode || document.querySelectorAll('div.tp-mount-node')[0];
+			var mountNodeSelector = that.get('mountNode') || 'div.tp-mount-node';
+			mountNode = document.querySelectorAll(mountNodeSelector)[0];
 			let mountNodeExists = !!mountNode;
 
 			if (!mountNodeExists) {
@@ -431,7 +439,7 @@ function factory(opts, force) {
 
 			if (!(that.enabled('bootstrap') && mountNodeExists)) {
 				if (that.enabled('bootstrap'))
-					debug(`MountNode ('.tp-mount-div') does not exist. Not bootstrapping.`)();
+					debug(`MountNode (${mountNodeSelector}) does not exist. Not bootstrapping.`)();
 
 				resolveUrl(that, window.location.href);
 			} else {
@@ -543,7 +551,7 @@ function factory(opts, force) {
 			// so isObjectOfType would always return false, unless
 			// the definition is cached, which would cause issues with
 			// 'private' variables.
-			var handlerIsApp = utils.isTrashPandaApplication(handler);
+			let handlerIsApp = utils.isTrashPandaApplication(handler);
 
 			if (!(handlerIsApp || utils.isFunction(handler)))
 				throw new Error('Middleware should be a function or a TrashPandaApplication.');
