@@ -6,7 +6,8 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"babel": "babel --presets 'es2015' ./src -d ./lib",
-		"prepublish": "npm run babel"
+		"prepublish": "npm run babel",
+		"postpublish": "rm -rf ./lib"
 	},
 	"keywords": [
 		"trashpanda",

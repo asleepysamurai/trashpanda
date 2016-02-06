@@ -411,8 +411,13 @@ function factory(opts, force) {
 		ext.forEach((extName) => view.engines[extName] = renderer);
 	};
 
-	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded = true, callback) {
+	TrashPandaApplication.prototype.load = function(waitForDOMContentLoaded, callback) {
 		let that = this;
+
+		if (utils.isFunction(waitForDOMContentLoaded) && !callback) {
+			callback = waitForDOMContentLoaded;
+			waitForDOMContentLoaded = true;
+		}
 
 		function loadApplication(ev = null, callback = callback) {
 			debug('Initing application...')();
@@ -453,12 +458,12 @@ function factory(opts, force) {
 		};
 
 		if (!waitForDOMContentLoaded)
-			return loadApplication();
+			return loadApplication(null, callback);
 
 		debug('Waiting for DOMContentLoaded to fire before initing application...')();
 		window.addEventListener('DOMContentLoaded', function(ev) {
 			debug('DOMContentLoaded fired.')();
-			loadApplication(ev);
+			loadApplication(ev, callback);
 		});
 	};
 
