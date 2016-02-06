@@ -60,13 +60,13 @@ function compile(watch, debug) {
 				e.duration = process.hrtime(startTime);
 				logDone(e);
 			})
-			.pipe(source('build.js'))
+			.pipe(source('trashpanda.js'))
 			.pipe(buffer())
 			.pipe(gulpif(argv.production, uglify().on('error', gutil.log)))
 			.pipe(gulpif(argv.production, rename({
 				suffix: '.min'
 			})))
-			.pipe(gulp.dest('./build').on('end', function() {
+			.pipe(gulp.dest('./dist').on('end', function() {
 				logDone({
 					task: 'write',
 					duration: process.hrtime(startTime)

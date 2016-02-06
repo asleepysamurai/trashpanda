@@ -2,9 +2,11 @@
 	"name": "trashpanda",
 	"version": "0.0.1",
 	"description": "TrashPanda Client Framework. Makes building extensible, modular applications really easy.",
-	"main": "./build/build.js",
+	"main": "./lib/index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"babel": "babel --presets 'es2015' ./src -d ./lib",
+		"prepublish": "npm run babel"
 	},
 	"keywords": [
 		"trashpanda",
@@ -14,6 +16,7 @@
 	],
 	"author": "Balaganesh Damodaran <bg@bgdam.com>",
 	"license": "ISC",
+	"repository": "https://github.com/asleepysamurai/trashpanda",
 	"dependencies": {
 		"async": "^1.5.2",
 		"bows": "^1.4.8",
@@ -22,12 +25,11 @@
 		"path": "^0.12.7",
 		"path-to-regexp": "^1.2.1",
 		"querystring": "^0.2.0",
-		"react": "^0.14.6",
-		"react-dom": "^0.14.6",
 		"url": "^0.11.0",
 		"utils-merge": "^1.0.0"
 	},
 	"devDependencies": {
+		"babel-cli": "^6.4.5",
 		"babel-preset-es2015": "^6.3.13",
 		"babelify": "^7.2.0",
 		"browserify": "^13.0.0",

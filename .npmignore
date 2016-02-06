@@ -33,6 +33,8 @@ node_modules
 # Optional REPL history
 .node_repl_history
 
-#don't ignore browserify build directory - only difference
-#between .npmignore and .gitignore
-#build
+#ignore the src directory since that contains es6 code
+src
+
+#ignore the dist directory since you wont need that if you're installing via npm
+dist
