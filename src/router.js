@@ -20,6 +20,7 @@ let utils = require('./utils');
 function factory(opts) {
 	let options = {};
 	let routes = {};
+	let params = {};
 
 	let methods = [
 		'all',
@@ -51,27 +52,88 @@ function factory(opts) {
 		'unsubscribe',
 	];
 
+	function reconcileParamsWithRoutes(params, routes) {
+		let paramNames = Object.keys(params);
+		let routeKeys = Object.keys(routes);
+
+		if (!(paramNames.length && routeKeys.length))
+			return;
+
+		routeKeys.forEach(routeKey => {
+			let route = routes[routeKey];
+			route.paramHandlersCount = route.paramHandlersCount || 0;
+
+			if (!(route.params && route.params.length))
+				return;
+
+			let paramsInRoute = route.params.filter(param => paramNames.indexOf(param) > -1);
+
+			if (!paramsInRoute.length)
+				return;
+
+			paramsInRoute.forEach(param => {
+				let handlers = params[param];
+				if (!(handlers && handlers.length))
+					return;
+
+				route.handlers = route.handlers || [];
+
+				if (route.handlers[0] && route.handlers[0].route && route.handlers[0].method) {
+					handlers.forEach(handler => {
+						handler.route = route.handlers[0].route;
+						handler.method = route.handlers[0].method;
+					});
+				}
+
+				route.handlers = [...route.handlers.splice(0, route.paramHandlersCount), ...handlers, ...route.handlers];
+				++route.paramHandlersCount;
+			});
+		});
+	};
+
 	function addHandlerForPath(path, handler, method = 'all', matchEntirePath = false) {
-		let params = [];
+		let keys = [];
 		let opts = {};
+		let newRoutes = {};
 
 		merge(opts, options);
 		opts.end = !matchEntirePath;
 
-		let matcher = pathToRegex(path, params, opts);
+		let matcher = pathToRegex(path, keys, opts);
 		let matcherKey = matcher.toString();
 
-		routes[matcherKey] = routes[matcherKey] || {};
-		routes[matcherKey].matcher = routes[matcherKey].matcher || matcher;
+		newRoutes[matcherKey] = newRoutes[matcherKey] || {};
+		newRoutes[matcherKey].matcher = newRoutes[matcherKey].matcher || matcher;
 
-		if (params.length)
-			routes[matcherKey].params = routes[matcherKey].params || params.map(param => param.name);
+		if (keys.length)
+			newRoutes[matcherKey].params = newRoutes[matcherKey].params || keys.map(key => key.name);
 
 		handler.route = path;
 		handler.method = method;
 
-		routes[matcherKey].handlers = routes[matcherKey].handlers || [];
-		routes[matcherKey].handlers.push(handler);
+		newRoutes[matcherKey].handlers = newRoutes[matcherKey].handlers || [];
+		newRoutes[matcherKey].handlers.push(handler);
+
+		reconcileParamsWithRoutes(params, newRoutes);
+		merge(routes, newRoutes);
+	};
+
+	function addHandlerForParams(_params, handler) {
+		if (utils.isString(_params))
+			_params = [_params];
+		if (!utils.isArrayOfStrings(_params))
+			throw new Error(`'params' should be a string or an array of strings.`);
+
+		let newParams = {};
+		_params.forEach(param => {
+			if (param) {
+				newParams[param] = newParams[param] || [];
+				newParams[param].push(handler);
+			}
+		});
+
+		reconcileParamsWithRoutes(newParams, routes);
+		merge(params, newParams);
 	};
 
 	function TrashPandaRouter(opts) {
@@ -86,6 +148,10 @@ function factory(opts) {
 		let route = {};
 		methods.forEach(methodName => route[methodName] = this[methodName].bind(this, path));
 		return route;
+	};
+
+	TrashPandaRouter.prototype.param = function(params, handler) {
+		addHandlerForParams(params, handler);
 	};
 
 	methods.forEach((methodName) => {

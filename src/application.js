@@ -368,6 +368,8 @@ function factory(opts, force) {
 		'trace',
 		'unlock',
 		'unsubscribe',
+		'param',
+		'all'
 	].forEach((methodName) => {
 		TrashPandaApplication.prototype[methodName] = function(...params) {
 			this.router[methodName](...params);

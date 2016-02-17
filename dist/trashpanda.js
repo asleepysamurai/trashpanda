@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.TrashPanda = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function (process,global){
 /*!
  * async
@@ -4282,7 +4282,7 @@ function factory(opts, force) {
   * Route related methods
   * These are just proxied through to the router
   */
-	['route', 'resolve', 'checkout', 'connect', 'copy', 'delete', 'head', 'lock', 'merge', 'mkactivity', 'mkcol', 'move', 'm-search', 'notify', 'options', 'patch', 'post', 'propfind', 'proppatch', 'purge', 'put', 'report', 'search', 'subscribe', 'trace', 'unlock', 'unsubscribe'].forEach(function (methodName) {
+	['route', 'resolve', 'checkout', 'connect', 'copy', 'delete', 'head', 'lock', 'merge', 'mkactivity', 'mkcol', 'move', 'm-search', 'notify', 'options', 'patch', 'post', 'propfind', 'proppatch', 'purge', 'put', 'report', 'search', 'subscribe', 'trace', 'unlock', 'unsubscribe', 'param'].forEach(function (methodName) {
 		TrashPandaApplication.prototype[methodName] = function () {
 			var _router;
 
@@ -4328,11 +4328,13 @@ function factory(opts, force) {
 		});
 	};
 
-	TrashPandaApplication.prototype.load = function () {
-		var waitForDOMContentLoaded = arguments.length <= 0 || arguments[0] === undefined ? true : arguments[0];
-		var callback = arguments[1];
-
+	TrashPandaApplication.prototype.load = function (waitForDOMContentLoaded, callback) {
 		var that = this;
+
+		if (utils.isFunction(waitForDOMContentLoaded) && !callback) {
+			callback = waitForDOMContentLoaded;
+			waitForDOMContentLoaded = true;
+		}
 
 		function loadApplication() {
 			var ev = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
@@ -4373,12 +4375,12 @@ function factory(opts, force) {
 			if (utils.isFunction(callback)) callback();
 		};
 
-		if (!waitForDOMContentLoaded) return loadApplication();
+		if (!waitForDOMContentLoaded) return loadApplication(null, callback);
 
 		debug('Waiting for DOMContentLoaded to fire before initing application...')();
 		window.addEventListener('DOMContentLoaded', function (ev) {
 			debug('DOMContentLoaded fired.')();
-			loadApplication(ev);
+			loadApplication(ev, callback);
 		});
 	};
 
@@ -4891,6 +4893,8 @@ module.exports = factory;
  * TrashPanda Router
  */
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 var pathToRegex = require('path-to-regexp');
 var merge = require('utils-merge');
 var urlUtils = require('url');
@@ -4901,8 +4905,42 @@ var utils = require('./utils');
 function factory(opts) {
 	var options = {};
 	var routes = {};
+	var params = {};
 
 	var methods = ['all', 'get', 'checkout', 'connect', 'copy', 'delete', 'head', 'lock', 'merge', 'mkactivity', 'mkcol', 'move', 'm-search', 'notify', 'options', 'patch', 'post', 'propfind', 'proppatch', 'purge', 'put', 'report', 'search', 'subscribe', 'trace', 'unlock', 'unsubscribe'];
+
+	function reconcileParamsWithRoutes(params, routes) {
+		var paramNames = Object.keys(params);
+		var routeKeys = Object.keys(routes);
+
+		routeKeys.forEach(function (routeKey) {
+			var route = routes[routeKey];
+
+			if (!(route.params && route.params.length)) return;
+
+			var paramsInRoute = route.params.filter(function (param) {
+				return paramNames.find(param);
+			});
+
+			if (!paramsInRoute.length) return;
+
+			paramsInRoute.forEach(function (param) {
+				var handlers = params[param];
+				if (!(handlers && handlers.length)) return;
+
+				route.handlers = route.handlers || [];
+
+				if (route.handlers[0] && route.handlers[0].route && route.handlers[0].method) {
+					handlers.forEach(function (handler) {
+						handler.route = route.handlers[0].route;
+						handler.method = route.handlers[0].method;
+					});
+				}
+
+				route.handlers = [].concat(_toConsumableArray(handlers), _toConsumableArray(route.handlers));
+			});
+		});
+	};
 
 	function addHandlerForPath(path, handler) {
 		var method = arguments.length <= 2 || arguments[2] === undefined ? 'all' : arguments[2];
@@ -4910,6 +4948,7 @@ function factory(opts) {
 
 		var params = [];
 		var opts = {};
+		var newRoutes = {};
 
 		merge(opts, options);
 		opts.end = !matchEntirePath;
@@ -4917,18 +4956,34 @@ function factory(opts) {
 		var matcher = pathToRegex(path, params, opts);
 		var matcherKey = matcher.toString();
 
-		routes[matcherKey] = routes[matcherKey] || {};
-		routes[matcherKey].matcher = routes[matcherKey].matcher || matcher;
+		newRoutes[matcherKey] = newRoutes[matcherKey] || {};
+		newRoutes[matcherKey].matcher = newRoutes[matcherKey].matcher || matcher;
 
-		if (params.length) routes[matcherKey].params = routes[matcherKey].params || params.map(function (param) {
+		if (params.length) newRoutes[matcherKey].params = newRoutes[matcherKey].params || params.map(function (param) {
 			return param.name;
 		});
 
 		handler.route = path;
 		handler.method = method;
 
-		routes[matcherKey].handlers = routes[matcherKey].handlers || [];
-		routes[matcherKey].handlers.push(handler);
+		newRoutes[matcherKey].handlers = newRoutes[matcherKey].handlers || [];
+		newRoutes[matcherKey].handlers.push(handler);
+
+		reconcileParamsWithRoutes(params, newRoutes);
+		merge(routes, newRoutes);
+	};
+
+	function addHandlerForParams(_params, handler) {
+		if (utils.isString(_params)) _params = [_params];
+		if (!utils.isArrayOfStrings(_params)) throw new Error('\'params\' should be a string or an array of strings.');
+
+		var newParams = {};
+		_params.forEach(function (param) {
+			if (param) newParams[param].push(handler);
+		});
+
+		reconcileParamsWithRoutes(newParams, routes);
+		merge(params, newParams);
 	};
 
 	function TrashPandaRouter(opts) {
@@ -5261,5 +5316,4 @@ module.exports = {
 	flattenArray: flattenArray
 };
 
-},{}]},{},[18])(18)
-});
+},{}]},{},[18]);
