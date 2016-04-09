@@ -12,7 +12,10 @@
 
 let pathToRegex = require('path-to-regexp');
 let urlUtils = require('url');
-let merge = require('utils-merge');
+let merge = require('extendify')({
+	isDeep: false,
+	arrays: 'replace'
+});
 let utils = require('./utils');
 
 function addLeadingSlashIfNotPresent(str) {

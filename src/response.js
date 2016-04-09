@@ -11,7 +11,10 @@
  */
 
 let pathToRegex = require('path-to-regexp');
-let merge = require('utils-merge');
+let merge = require('extendify')({
+	isDeep: false,
+	arrays: 'replace'
+});
 let utils = require('./utils');
 
 let debug = utils.debug('TrashPanda:response');

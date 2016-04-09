@@ -14,7 +14,10 @@
 
 let EventEmitter = require('eventemitter3');
 let mixin = require('merge-descriptors');
-let merge = require('utils-merge');
+let merge = require('extendify')({
+	isDeep: false,
+	arrays: 'replace'
+});
 let pathUtil = require('path');
 
 let utils = require('./utils');
@@ -92,11 +95,12 @@ function resolveDependencies(dependencyNames, apps) {
 	if (!(utils.isArrayOfStrings(dependencyNames)))
 		throw new Error('Application dependencies should be an array of dependency names.');
 
-	let resolvedDependencies = dependencyNames.map(name => {
+	let resolvedDependencies = {};
+	dependencyNames.forEach(name => {
 		if (!apps.hasOwnProperty(name))
 			throw new Error(`Dependency ${name} not available or was not inited properly.`);
 
-		return apps[name];
+		return resolvedDependencies[name] = apps[name];
 	});
 
 	return resolvedDependencies;
@@ -112,7 +116,8 @@ function initApps(app, mocks, apps, rootApp) {
 	if (app.state == states.preInit) {
 		debug(`Initing app ${app.name}...`)();
 
-		app.dependencies = resolveMockDependencies(app.dependencies, mocks);
+		let dependencyNames = app.get('dependencies') || [];
+		app.dependencies = resolveMockDependencies(dependencyNames, mocks);
 		app.state = states.inited;
 		apps[app.name] = app;
 		app.emit('init', app);
@@ -133,7 +138,8 @@ function loadApps(apps) {
 		debug(`Loading app ${app.name}...`)();
 
 		if (app.state == states.inited) {
-			app.dependencies = resolveDependencies(app.dependencies, apps);
+			let dependencyNames = app.get('dependencies') || [];
+			app.dependencies = resolveDependencies(dependencyNames, apps);
 			app.state = states.loaded;
 			app.emit('load', app);
 		}

@@ -4,7 +4,10 @@
  * Utility methods
  */
 
-let merge = require('utils-merge');
+let merge = require('extendify')({
+	isDeep: false,
+	arrays: 'replace'
+});
 let debug = require('bows');
 
 let types = require('./types');

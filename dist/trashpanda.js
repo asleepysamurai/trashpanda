@@ -4282,7 +4282,7 @@ function factory(opts, force) {
   * Route related methods
   * These are just proxied through to the router
   */
-	['route', 'resolve', 'checkout', 'connect', 'copy', 'delete', 'head', 'lock', 'merge', 'mkactivity', 'mkcol', 'move', 'm-search', 'notify', 'options', 'patch', 'post', 'propfind', 'proppatch', 'purge', 'put', 'report', 'search', 'subscribe', 'trace', 'unlock', 'unsubscribe', 'param'].forEach(function (methodName) {
+	['route', 'resolve', 'checkout', 'connect', 'copy', 'delete', 'head', 'lock', 'merge', 'mkactivity', 'mkcol', 'move', 'm-search', 'notify', 'options', 'patch', 'post', 'propfind', 'proppatch', 'purge', 'put', 'report', 'search', 'subscribe', 'trace', 'unlock', 'unsubscribe', 'param', 'all'].forEach(function (methodName) {
 		TrashPandaApplication.prototype[methodName] = function () {
 			var _router;
 
@@ -4913,13 +4913,16 @@ function factory(opts) {
 		var paramNames = Object.keys(params);
 		var routeKeys = Object.keys(routes);
 
+		if (!(paramNames.length && routeKeys.length)) return;
+
 		routeKeys.forEach(function (routeKey) {
 			var route = routes[routeKey];
+			route.paramHandlersCount = route.paramHandlersCount || 0;
 
 			if (!(route.params && route.params.length)) return;
 
 			var paramsInRoute = route.params.filter(function (param) {
-				return paramNames.find(param);
+				return paramNames.indexOf(param) > -1;
 			});
 
 			if (!paramsInRoute.length) return;
@@ -4937,7 +4940,8 @@ function factory(opts) {
 					});
 				}
 
-				route.handlers = [].concat(_toConsumableArray(handlers), _toConsumableArray(route.handlers));
+				route.handlers = [].concat(_toConsumableArray(route.handlers.splice(0, route.paramHandlersCount)), _toConsumableArray(handlers), _toConsumableArray(route.handlers));
+				++route.paramHandlersCount;
 			});
 		});
 	};
@@ -4946,21 +4950,21 @@ function factory(opts) {
 		var method = arguments.length <= 2 || arguments[2] === undefined ? 'all' : arguments[2];
 		var matchEntirePath = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
 
-		var params = [];
+		var keys = [];
 		var opts = {};
 		var newRoutes = {};
 
 		merge(opts, options);
 		opts.end = !matchEntirePath;
 
-		var matcher = pathToRegex(path, params, opts);
+		var matcher = pathToRegex(path, keys, opts);
 		var matcherKey = matcher.toString();
 
 		newRoutes[matcherKey] = newRoutes[matcherKey] || {};
 		newRoutes[matcherKey].matcher = newRoutes[matcherKey].matcher || matcher;
 
-		if (params.length) newRoutes[matcherKey].params = newRoutes[matcherKey].params || params.map(function (param) {
-			return param.name;
+		if (keys.length) newRoutes[matcherKey].params = newRoutes[matcherKey].params || keys.map(function (key) {
+			return key.name;
 		});
 
 		handler.route = path;
@@ -4979,7 +4983,10 @@ function factory(opts) {
 
 		var newParams = {};
 		_params.forEach(function (param) {
-			if (param) newParams[param].push(handler);
+			if (param) {
+				newParams[param] = newParams[param] || [];
+				newParams[param].push(handler);
+			}
 		});
 
 		reconcileParamsWithRoutes(newParams, routes);
@@ -5002,6 +5009,10 @@ function factory(opts) {
 			return route[methodName] = _this[methodName].bind(_this, path);
 		});
 		return route;
+	};
+
+	TrashPandaRouter.prototype.param = function (params, handler) {
+		addHandlerForParams(params, handler);
 	};
 
 	methods.forEach(function (methodName) {

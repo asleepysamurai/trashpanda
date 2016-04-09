@@ -11,7 +11,9 @@
  */
 
 let pathToRegex = require('path-to-regexp');
-let merge = require('utils-merge');
+let merge = require('extendify')({
+	arrays: 'concat'
+});
 let urlUtils = require('url');
 let async = require('async');
 
@@ -115,6 +117,10 @@ function factory(opts) {
 		newRoutes[matcherKey].handlers.push(handler);
 
 		reconcileParamsWithRoutes(params, newRoutes);
+
+		routes[matcherKey] = routes[matcherKey] || {
+			handlers: []
+		};
 		merge(routes, newRoutes);
 	};
 
