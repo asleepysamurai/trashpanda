@@ -226,14 +226,25 @@ function factory(opts) {
 						return;
 
 					let handlerCollection = handler.errorHandler ? errorHandlers : execHandlers;
-					handlerCollection.push({
+					let handlerConfig = {
 						exec: handler,
 						params: routes[matcherKey].params,
 						matches: matches
-					});
+					};
+
+					if (handler.willRender && !handlerCollection.renderingHandler)
+						handlerCollection.renderingHandler = handlerConfig;
+					else
+						handlerCollection.push(handlerConfig);
 				});
+
 			}
 		});
+
+		if (errorHandlers.renderingHandler)
+			errorHandlers.push(errorHandlers.renderingHandler);
+		if (execHandlers.renderingHandler)
+			execHandlers.push(execHandlers.renderingHandler);
 
 		if (!execHandlers.length)
 			return res.sendStatus(404);
