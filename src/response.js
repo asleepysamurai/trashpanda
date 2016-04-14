@@ -23,28 +23,18 @@ function factory(opts) {
 	let callback;
 	let status;
 	let title;
-	let responseEnded;
 
 	function TrashPandaResponse(opts) {
 		this.app = opts.app;
 		this.req = opts.req;
 		this.router = opts.router;
-
 		callback = opts.callback;
-		responseEnded = false;
 
 		this.locals = {};
 	};
 
 	TrashPandaResponse.prototype.end = function(data, redirectUrl) {
-		if (responseEnded) {
-			let err = new Error('Response already sent. Cannot resend.');
-			err.code = 'CANTRESEND';
-			return callback(err);
-		}
-
 		this.status(status || 200);
-		responseEnded = true;
 		this.router.setAsAuthoritativeRouter();
 
 		if (title)
@@ -162,6 +152,11 @@ function factory(opts) {
 
 	TrashPandaResponse.prototype.title = function(val) {
 		title = val;
+	};
+
+	TrashPandaResponse.prototype.rerender = function() {
+		// Stub function which does nothing
+		// until it is updated on first render
 	};
 
 	return new TrashPandaResponse(opts);

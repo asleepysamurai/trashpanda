@@ -249,7 +249,7 @@ function factory(opts) {
 		if (!execHandlers.length)
 			return res.sendStatus(404);
 
-		function resolveWithUpdatedRequest(req, res, handler, next) {
+		function resolveWithUpdatedRequest(req, res, handler, idx, next) {
 			var mappedParams = {};
 
 			if (utils.isArray(handler.params))
@@ -266,10 +266,16 @@ function factory(opts) {
 				app: options.app
 			});
 
+			if (idx == (execHandlers.length - 1)) {
+				res.update({
+					rerender: handler.exec.bind(handler, req, res, function noop() {})
+				});
+			}
+
 			handler.exec(req, res, next);
 		};
 
-		async.eachSeries(execHandlers, resolveWithUpdatedRequest.bind(null, req, res), err => {
+		async.forEachOfSeries(execHandlers, resolveWithUpdatedRequest.bind(null, req, res), err => {
 			if (!err)
 				return next();
 
